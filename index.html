@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phạm Tân — Kiến trúc sư</title>
+<script>document.documentElement.classList.add('js');</script>
+<meta name="description" content="Phạm Tân, Kiến trúc sư. Triển khai và kiểm tra bản vẽ thiết kế kỹ thuật. Phạm Tân, Architect.">
+<style>
+/* ==========================================================
+   Design tokens (mirrors design-tokens.json)
+   ========================================================== */
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #f3f5f8;
+  --color-text: #151a22;
+  --color-muted: #566070;
+  --color-line: #d9dfe7;
+  --color-accent: #0b3a82;
+  --color-accent-hover: #082c66;
+  --color-accent-tint: #e7eef8;
+  --color-on-accent: #ffffff;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.9375rem;
+  --fs-base: 1rem;
+  --fs-md: 1.125rem;
+  --fs-lg: 1.375rem;
+  --fs-xl: 1.75rem;
+  --fs-display: 2.25rem;
+
+  --lh-body: 1.6;
+  --lh-heading: 1.2;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-pill: 999px;
+
+  --tap-min: 44px;
+  --container: 1120px;
+}
+@media (min-width: 640px) {
+  :root { --fs-display: 2.75rem; --fs-xl: 2rem; }
+}
+@media (min-width: 960px) {
+  :root { --fs-display: 3.5rem; }
+}
+
+/* ==========================================================
+   Base
+   ========================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 72px; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+  color: var(--color-text);
+  background: var(--color-bg);
+  overflow-wrap: break-word;
+}
+img { display: block; max-width: 100%; height: auto; }
+h1, h2, h3, h4, p, ul, ol { margin: 0; }
+h1, h2, h3, h4 { line-height: var(--lh-heading); font-weight: 700; }
+a { color: var(--color-accent); }
+:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+
+.wrap {
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+@media (min-width: 640px) {
+  .wrap { padding: 0 var(--space-6); }
+}
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+.muted { color: var(--color-muted); }
+
+/* ==========================================================
+   Language switch (CSS-only; JS adds persistence and alt/title)
+   The two radios are siblings before <header> and <main>.
+   ========================================================== */
+.lang-input {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+#lang-vi:checked ~ * [lang="en"],
+#lang-en:checked ~ * [lang="vi"] { display: none; }
+
+/* ==========================================================
+   Header
+   ========================================================== */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-line);
+}
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 64px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: none;
+}
+.site-nav { display: none; }
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  color: var(--color-muted);
+  text-decoration: none;
+  font-size: var(--fs-sm);
+}
+.site-nav a:hover { color: var(--color-accent); }
+@media (min-width: 960px) {
+  .site-nav { display: flex; gap: var(--space-2); }
+}
+
+.lang-switch {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+}
+.lang-switch label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+#lang-vi:checked ~ .site-header label[for="lang-vi"],
+#lang-en:checked ~ .site-header label[for="lang-en"] {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.lang-input:focus-visible ~ .site-header .lang-switch {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* ==========================================================
+   Hero
+   ========================================================== */
+.hero {
+  position: relative;
+  padding: var(--space-8) 0 0;
+  border-bottom: 1px solid var(--color-line);
+  overflow: hidden;
+}
+.hero > .wrap { position: relative; z-index: 1; padding-bottom: var(--space-7); }
+.hero h1 {
+  font-size: var(--fs-display);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-3);
+}
+.hero-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-bottom: var(--space-5);
+}
+.hero-intro {
+  max-width: 36em;
+  font-size: var(--fs-md);
+  color: var(--color-muted);
+  margin-bottom: var(--space-6);
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.section-actions { margin-top: var(--space-5); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 100%;
+  min-height: var(--tap-min);
+  padding: var(--space-3) var(--space-5);
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.btn-primary { background: var(--color-accent); color: var(--color-on-accent); }
+.btn-primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+.btn-ghost { background: var(--color-bg); color: var(--color-accent); }
+.btn-ghost:hover { background: var(--color-accent-tint); }
+@media (min-width: 480px) {
+  .btn { flex: 0 0 auto; }
+}
+
+/* ==========================================================
+   Sections: section head (left) + body (right) on the grid
+   ========================================================== */
+.section {
+  padding: var(--space-8) 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.section-grid {
+  display: grid;
+  gap: var(--space-5);
+}
+.section-head h2 {
+  font-size: var(--fs-xl);
+  letter-spacing: -0.01em;
+}
+.section-head h2::before {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 3px;
+  margin-bottom: var(--space-3);
+  background: var(--color-accent);
+}
+.lead {
+  font-size: var(--fs-md);
+  max-width: 40em;
+}
+.lead + .lead { margin-top: var(--space-4); }
+.note {
+  margin-top: var(--space-5);
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+}
+@media (min-width: 960px) {
+  .section-grid {
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: var(--space-7);
+  }
+}
+
+/* ==========================================================
+   Cards and media
+   ========================================================== */
+.card-media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+.card-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.company + .company { margin-top: var(--space-7); }
+.company-name {
+  margin-bottom: var(--space-4);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+.cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+}
+@media (min-width: 640px) {
+  .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.card {
+  margin: 0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.card-body { padding: var(--space-4) var(--space-5) var(--space-5); }
+.card-title {
+  margin-bottom: var(--space-2);
+  font-size: var(--fs-md);
+}
+.card-role {
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+}
+
+/* Featured project */
+.featured {
+  display: grid;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.featured .card-media { aspect-ratio: 16 / 10; }
+.featured-body { padding: var(--space-5); }
+.featured-body .card-title { font-size: var(--fs-lg); }
+.featured-body .company-name { margin-bottom: var(--space-3); }
+.featured-body .card-role { font-size: var(--fs-base); color: var(--color-text); }
+@media (min-width: 640px) {
+  .featured-body { padding: var(--space-6); }
+}
+@media (min-width: 960px) {
+  .featured { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  .featured .card-media { aspect-ratio: auto; min-height: 360px; }
+  .featured-body { display: flex; flex-direction: column; justify-content: center; }
+}
+
+/* ==========================================================
+   Timeline
+   ========================================================== */
+.timeline { position: relative; list-style: none; padding: 0; }
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-text);
+}
+.timeline li {
+  position: relative;
+  margin-left: 6px;
+  padding: 0 0 var(--space-6) var(--space-6);
+}
+.timeline li:last-child { padding-bottom: 0; }
+.timeline li::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 4px var(--color-bg);
+}
+.tl-date {
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+.tl-company {
+  margin-top: var(--space-1);
+  font-size: var(--fs-md);
+}
+.tl-role { color: var(--color-muted); }
+.tl-gap::before { display: none; }
+.tl-gap p {
+  font-size: var(--fs-sm);
+  font-style: italic;
+  color: var(--color-muted);
+}
+
+/* ==========================================================
+   Skills
+   ========================================================== */
+.skill-group + .skill-group { margin-top: var(--space-6); }
+.skill-group h3 {
+  margin-bottom: var(--space-3);
+  font-size: var(--fs-base);
+  color: var(--color-muted);
+  font-weight: 600;
+}
+.chips {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.chip {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+/* ==========================================================
+   Contact
+   ========================================================== */
+.contact-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.contact-list .label {
+  display: block;
+  font-size: var(--fs-sm);
+  color: var(--color-muted);
+}
+.contact-list a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================================
+   Scroll reveal (CSS scroll-driven; off when reduced motion is set;
+   without support the content is simply visible)
+   ========================================================== */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal-in linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 35%;
+    }
+  }
+}
+@keyframes reveal-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .btn { transition: none; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+
+/* ==========================================================
+   Hero photo (black and white), card plan grid, timeline draw.
+   ========================================================== */
+.hero-media {
+  position: relative;
+  margin: var(--space-6) 0 0;
+  height: 260px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.hero-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  filter: grayscale(1) contrast(1.05);
+}
+@media (min-width: 960px) {
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: var(--space-7);
+    align-items: center;
+  }
+  .hero-media { margin: 0; height: 560px; }
+}
+.card:hover {
+  border-color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-text);
+}
+.card-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(21,26,34,.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(21,26,34,.22) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.card:hover .card-media::after { opacity: 1; }
+@keyframes grow-y {
+  from { transform: scaleY(0); }
+  to   { transform: none; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .timeline::before {
+      transform-origin: top;
+      animation: grow-y linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .card-media::after { transition: none; }
+}
+
+.section-grid, .cards, .timeline { min-width: 0; }
+</style>
+</head>
+<body>
+
+<input type="radio" name="lang" id="lang-vi" class="lang-input" checked>
+<input type="radio" name="lang" id="lang-en" class="lang-input">
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="#top">Phạm Tân</a>
+    <nav class="site-nav" aria-label="Điều hướng / Navigation">
+      <a href="#gioi-thieu"><span lang="vi">Giới thiệu</span><span lang="en">About</span></a>
+      <a href="#du-an"><span lang="vi">Dự án</span><span lang="en">Projects</span></a>
+      <a href="#kinh-nghiem"><span lang="vi">Kinh nghiệm</span><span lang="en">Experience</span></a>
+      <a href="#lien-he"><span lang="vi">Liên hệ</span><span lang="en">Contact</span></a>
+    </nav>
+    <div class="lang-switch" role="group" aria-label="Ngôn ngữ / Language">
+      <label for="lang-vi">VI</label>
+      <label for="lang-en">EN</label>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- 1. Hero -->
+  <section class="hero" aria-labelledby="hero-name">
+    <div class="wrap hero-grid">
+      <div class="hero-text">
+        <h1 id="hero-name">Phạm Tân</h1>
+      <p class="hero-title">
+        <span lang="vi">Kiến trúc sư</span><span lang="en">Architect</span>
+      </p>
+      <p class="hero-intro">
+        <span lang="vi">Triển khai và kiểm tra bản vẽ thiết kế kỹ thuật, phối hợp cùng chủ trì, chủ đầu tư và nhà thầu.</span><span lang="en">I develop and check technical design drawings, coordinating with lead architects, clients and contractors.</span>
+      </p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="mailto:phamtan239@gmail.com"><span lang="vi">Gửi email</span><span lang="en">Email me</span></a>
+        <a class="btn btn-ghost" href="https://drive.google.com/drive/folders/1kl3kAbeu0QViBb98IaywDWhqc07IIlR6?usp=sharing" target="_blank" rel="noopener noreferrer"><span lang="vi">Xem portfolio</span><span lang="en">View portfolio</span></a>
+      </div>
+      </div>
+      <figure class="hero-media">
+        <img src="anh/hero-tower.jpg" loading="eager" decoding="async"
+             alt="Đỉnh các tòa nhà cao tầng, ảnh đen trắng" data-alt-vi="Đỉnh các tòa nhà cao tầng, ảnh đen trắng" data-alt-en="Tops of high-rise towers, black and white photo">
+      </figure>
+    </div>
+  </section>
+
+  <!-- 2. Giới thiệu ngắn -->
+  <section class="section" id="gioi-thieu" aria-labelledby="h-gioi-thieu">
+    <div class="wrap section-grid reveal">
+      <header class="section-head">
+        <h2 id="h-gioi-thieu"><span lang="vi">Giới thiệu ngắn</span><span lang="en">About</span></h2>
+      </header>
+      <div>
+        <p class="lead">
+          <span lang="vi">Cử nhân Kiến trúc, Đại học Kiến trúc Hà Nội (2018), chuyên ngành thiết kế kiến trúc. Có chứng chỉ hành nghề kiến trúc do Sở Quy hoạch – Kiến trúc Hà Nội cấp (2/2023).</span><span lang="en">Bachelor of Architecture, Hanoi Architecture University (2018), majoring in architectural design. Holder of an Architectural Practicing Certificate issued by the Hanoi Department of Planning and Architecture (Feb 2023).</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Vai trò hiện tại -->
+  <section class="section" id="vai-tro" aria-labelledby="h-vai-tro">
+    <div class="wrap section-grid reveal">
+      <header class="section-head">
+        <h2 id="h-vai-tro"><span lang="vi">Vai trò hiện tại</span><span lang="en">Current role</span></h2>
+      </header>
+      <div>
+        <p class="lead">
+          <span lang="vi">Tại CJSC (04/2025 – 05/2026), tôi triển khai và kiểm tra các bản vẽ thiết kế kỹ thuật, phối hợp với chủ trì kiến trúc, chủ đầu tư, các bộ môn và nhà thầu.</span><span lang="en">At CJSC (04/2025 – 05/2026), I developed and checked technical design drawings, coordinating with lead architects, clients, engineering disciplines and contractors.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Dự án nổi bật -->
+  <section class="section" id="noi-bat" aria-labelledby="h-noi-bat">
+    <div class="wrap section-grid reveal">
+      <header class="section-head">
+        <h2 id="h-noi-bat"><span lang="vi">Dự án nổi bật</span><span lang="en">Featured project</span></h2>
+      </header>
+      <article class="featured">
+        <div class="card-media">
+          <img src="anh/thap-xuan-la.jpg" loading="lazy" decoding="async"
+               alt="Ảnh công trình Tháp Xuân La, Hà Nội"
+               data-alt-vi="Ảnh công trình Tháp Xuân La, Hà Nội"
+               data-alt-en="Project photo: Tháp Xuân La, Hà Nội">
+        </div>
+        <div class="featured-body">
+          <p class="company-name">NDC</p>
+          <h3 class="card-title">Tháp Xuân La, Hà Nội</h3>
+          <p class="card-role">
+            <span lang="vi">Tôi kiểm tra bản vẽ thiết kế kỹ thuật PCCC.</span><span lang="en">I checked the technical fire-safety (PCCC) design drawings.</span>
+          </p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 5. Danh sách dự án -->
+  <section class="section" id="du-an" aria-labelledby="h-du-an">
+    <div class="wrap section-grid reveal">
+      <header class="section-head">
+        <h2 id="h-du-an"><span lang="vi">Danh sách dự án</span><span lang="en">Projects</span></h2>
+      </header>
+      <div>
+        <p class="lead">
+          <span lang="vi">Nhóm theo công ty. Vai trò chung: hỗ trợ thiết kế.</span><span lang="en">Grouped by company. Role overall: design support.</span>
+        </p>
+
+        <div class="company">
+          <h3 class="company-name">RSP</h3>
+          <div class="cards">
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/go-thai-binh.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Trung tâm thương mại GO Thái Bình" data-alt-vi="Ảnh công trình Trung tâm thương mại GO Thái Bình" data-alt-en="Project photo: Trung tâm thương mại GO Thái Bình"></div>
+              <div class="card-body">
+                <h4 class="card-title">Trung tâm thương mại GO Thái Bình</h4>
+                <p class="card-role"><span lang="vi">Thiết kế kỹ thuật PCCC</span><span lang="en">Technical fire-safety (PCCC) design</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/viet-nhat-thai-nguyen.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Trung tâm thương mại Việt Nhật Thái Nguyên" data-alt-vi="Ảnh công trình Trung tâm thương mại Việt Nhật Thái Nguyên" data-alt-en="Project photo: Trung tâm thương mại Việt Nhật Thái Nguyên"></div>
+              <div class="card-body">
+                <h4 class="card-title">Trung tâm thương mại Việt Nhật Thái Nguyên</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công, giai đoạn thi công</span><span lang="en">Construction design, construction stage</span></p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="company">
+          <h3 class="company-name">NDC</h3>
+          <div class="cards">
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/manor-lao-cai.jpg" loading="lazy" decoding="async" alt="Ảnh công trình The Manor Lào Cai" data-alt-vi="Ảnh công trình The Manor Lào Cai" data-alt-en="Project photo: The Manor Lào Cai"></div>
+              <div class="card-body">
+                <h4 class="card-title">The Manor Lào Cai</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công, giai đoạn thi công</span><span lang="en">Construction design, construction stage</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/b3cc1.jpg" loading="lazy" decoding="async" alt="Ảnh công trình B3CC1, Tây Hồ Tây, Hà Nội" data-alt-vi="Ảnh công trình B3CC1, Tây Hồ Tây, Hà Nội" data-alt-en="Project photo: B3CC1, Tây Hồ Tây, Hà Nội"></div>
+              <div class="card-body">
+                <h4 class="card-title">B3CC1, Tây Hồ Tây, Hà Nội</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công, giai đoạn thi công</span><span lang="en">Construction design, construction stage</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/wyndham-hoi-an.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Wyndham Grand Hội An" data-alt-vi="Ảnh công trình Wyndham Grand Hội An" data-alt-en="Project photo: Wyndham Grand Hội An"></div>
+              <div class="card-body">
+                <h4 class="card-title">Wyndham Grand Hội An</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công</span><span lang="en">Construction design</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/thap-xuan-la.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Tháp Xuân La, Hà Nội" data-alt-vi="Ảnh công trình Tháp Xuân La, Hà Nội" data-alt-en="Project photo: Tháp Xuân La, Hà Nội"></div>
+              <div class="card-body">
+                <h4 class="card-title">Tháp Xuân La, Hà Nội</h4>
+                <p class="card-role"><span lang="vi">Thiết kế kỹ thuật PCCC</span><span lang="en">Technical fire-safety (PCCC) design</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/hong-ngoc.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Bệnh viện Hồng Ngọc giai đoạn 2" data-alt-vi="Ảnh công trình Bệnh viện Hồng Ngọc giai đoạn 2" data-alt-en="Project photo: Bệnh viện Hồng Ngọc, phase 2"></div>
+              <div class="card-body">
+                <h4 class="card-title">Bệnh viện Hồng Ngọc giai đoạn 2</h4>
+                <p class="card-role"><span lang="vi">Thiết kế kỹ thuật PCCC</span><span lang="en">Technical fire-safety (PCCC) design</span></p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="company">
+          <h3 class="company-name">VNCC</h3>
+          <div class="cards">
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/an-binh.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Khách sạn ngôi sao An Bình, Hà Nội" data-alt-vi="Ảnh công trình Khách sạn ngôi sao An Bình, Hà Nội" data-alt-en="Project photo: Khách sạn ngôi sao An Bình, Hà Nội"></div>
+              <div class="card-body">
+                <h4 class="card-title">Khách sạn ngôi sao An Bình, Hà Nội</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công</span><span lang="en">Construction design</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/ta-quang-buu.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Nhà ở xã hội Tạ Quang Bửu, Hải Dương" data-alt-vi="Ảnh công trình Nhà ở xã hội Tạ Quang Bửu, Hải Dương" data-alt-en="Project photo: Nhà ở xã hội Tạ Quang Bửu, Hải Dương"></div>
+              <div class="card-body">
+                <h4 class="card-title">Nhà ở xã hội Tạ Quang Bửu, Hải Dương</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công</span><span lang="en">Construction design</span></p>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="company">
+          <h3 class="company-name">CJSC</h3>
+          <div class="cards">
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/hai-long.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Nhà máy thức ăn chăn nuôi Hải Long Vĩnh Phúc" data-alt-vi="Ảnh công trình Nhà máy thức ăn chăn nuôi Hải Long Vĩnh Phúc" data-alt-en="Project photo: Nhà máy thức ăn chăn nuôi Hải Long Vĩnh Phúc"></div>
+              <div class="card-body">
+                <h4 class="card-title">Nhà máy thức ăn chăn nuôi Hải Long Vĩnh Phúc</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công</span><span lang="en">Construction design</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/glitter.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Nhà máy GLITTER Thái Bình" data-alt-vi="Ảnh công trình Nhà máy GLITTER Thái Bình" data-alt-en="Project photo: Nhà máy GLITTER Thái Bình"></div>
+              <div class="card-body">
+                <h4 class="card-title">Nhà máy GLITTER Thái Bình</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công</span><span lang="en">Construction design</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/hailianke.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Nhà máy HaiLianKe Vĩnh Long" data-alt-vi="Ảnh công trình Nhà máy HaiLianKe Vĩnh Long" data-alt-en="Project photo: Nhà máy HaiLianKe Vĩnh Long"></div>
+              <div class="card-body">
+                <h4 class="card-title">Nhà máy HaiLianKe Vĩnh Long</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công</span><span lang="en">Construction design</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/ziaoming.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Dự án công nghệ ZiaoMing Bắc Ninh" data-alt-vi="Ảnh công trình Dự án công nghệ ZiaoMing Bắc Ninh" data-alt-en="Project photo: Dự án công nghệ ZiaoMing Bắc Ninh"></div>
+              <div class="card-body">
+                <h4 class="card-title">Dự án công nghệ ZiaoMing Bắc Ninh</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công</span><span lang="en">Construction design</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/yong-ding.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Nhà máy Yong Ding Bắc Ninh" data-alt-vi="Ảnh công trình Nhà máy Yong Ding Bắc Ninh" data-alt-en="Project photo: Nhà máy Yong Ding Bắc Ninh"></div>
+              <div class="card-body">
+                <h4 class="card-title">Nhà máy Yong Ding Bắc Ninh</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công</span><span lang="en">Construction design</span></p>
+              </div>
+            </article>
+            <article class="card reveal">
+              <div class="card-media"><img src="anh/pegavision.jpg" loading="lazy" decoding="async" alt="Ảnh công trình Ký túc xá Pegavision Thái Bình" data-alt-vi="Ảnh công trình Ký túc xá Pegavision Thái Bình" data-alt-en="Project photo: Ký túc xá Pegavision Thái Bình"></div>
+              <div class="card-body">
+                <h4 class="card-title">Ký túc xá Pegavision Thái Bình</h4>
+                <p class="card-role"><span lang="vi">Thiết kế thi công</span><span lang="en">Construction design</span></p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Kinh nghiệm -->
+  <section class="section" id="kinh-nghiem" aria-labelledby="h-kinh-nghiem">
+    <div class="wrap section-grid reveal">
+      <header class="section-head">
+        <h2 id="h-kinh-nghiem"><span lang="vi">Kinh nghiệm</span><span lang="en">Experience</span></h2>
+      </header>
+      <div>
+        <ol class="timeline">
+          <li class="reveal">
+            <p class="tl-date">11/2018 – 01/2020</p>
+            <h3 class="tl-company">Gendai Sougo Vietnam</h3>
+            <p class="tl-role"><span lang="vi">Kiến trúc sư</span><span lang="en">Architect</span></p>
+          </li>
+          <li class="reveal">
+            <p class="tl-date">02/2020 – 03/2021</p>
+            <h3 class="tl-company">RSP (Vietnam)</h3>
+            <p class="tl-role"><span lang="vi">Kiến trúc sư</span><span lang="en">Architect</span></p>
+          </li>
+          <li class="reveal">
+            <p class="tl-date">04/2021 – 04/2024</p>
+            <h3 class="tl-company">NDC Consulting</h3>
+            <p class="tl-role"><span lang="vi">Kiến trúc sư</span><span lang="en">Architect</span></p>
+          </li>
+          <li class="reveal">
+            <p class="tl-date">07/2024 – 01/2025</p>
+            <h3 class="tl-company">VNCC</h3>
+            <p class="tl-role"><span lang="vi">Kiến trúc sư</span><span lang="en">Architect</span></p>
+          </li>
+          <li class="tl-gap reveal">
+            <p><span lang="vi">Khoảng trống: 02–03/2025</span><span lang="en">Gap: 02–03/2025</span></p>
+          </li>
+          <li class="reveal">
+            <p class="tl-date">04/2025 – 05/2026</p>
+            <h3 class="tl-company">CJSC</h3>
+            <p class="tl-role"><span lang="vi">Kiến trúc sư</span><span lang="en">Architect</span></p>
+          </li>
+          <li class="tl-gap reveal">
+            <p><span lang="vi">Khoảng trống: từ 05/2026 đến nay</span><span lang="en">Gap: 05/2026 to present</span></p>
+          </li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Kỹ năng -->
+  <section class="section" id="ky-nang" aria-labelledby="h-ky-nang">
+    <div class="wrap section-grid reveal">
+      <header class="section-head">
+        <h2 id="h-ky-nang"><span lang="vi">Kỹ năng</span><span lang="en">Skills</span></h2>
+      </header>
+      <div>
+        <div class="skill-group">
+          <h3><span lang="vi">Phần mềm, thành thạo</span><span lang="en">Software, proficient</span></h3>
+          <ul class="chips">
+            <li class="chip">AutoCAD</li>
+            <li class="chip">SketchUp</li>
+            <li class="chip">Photoshop</li>
+            <li class="chip">Enscape</li>
+            <li class="chip">D5 Render</li>
+          </ul>
+        </div>
+        <div class="skill-group">
+          <h3><span lang="vi">Phần mềm, cơ bản</span><span lang="en">Software, basic</span></h3>
+          <ul class="chips">
+            <li class="chip">Revit</li>
+            <li class="chip">MS Word</li>
+            <li class="chip">MS Excel</li>
+            <li class="chip">MS PowerPoint</li>
+          </ul>
+        </div>
+        <div class="skill-group">
+          <h3><span lang="vi">Ngôn ngữ</span><span lang="en">Languages</span></h3>
+          <ul class="chips">
+            <li class="chip"><span lang="vi">Tiếng Việt: bản ngữ</span><span lang="en">Vietnamese: native</span></li>
+            <li class="chip"><span lang="vi">Tiếng Anh: cơ bản</span><span lang="en">English: basic</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Portfolio -->
+  <section class="section" id="portfolio" aria-labelledby="h-portfolio">
+    <div class="wrap section-grid reveal">
+      <header class="section-head">
+        <h2 id="h-portfolio">Portfolio</h2>
+      </header>
+      <div>
+        <p class="lead">
+          <span lang="vi">Xem các công trình đã thực hiện.</span><span lang="en">View completed works.</span>
+        </p>
+        <p class="hero-actions section-actions">
+          <a class="btn btn-primary" href="https://drive.google.com/drive/folders/1kl3kAbeu0QViBb98IaywDWhqc07IIlR6?usp=sharing" target="_blank" rel="noopener noreferrer"><span lang="vi">Xem portfolio</span><span lang="en">View portfolio</span></a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Liên hệ -->
+  <section class="section" id="lien-he" aria-labelledby="h-lien-he">
+    <div class="wrap section-grid reveal">
+      <header class="section-head">
+        <h2 id="h-lien-he"><span lang="vi">Liên hệ</span><span lang="en">Contact</span></h2>
+      </header>
+      <div>
+        <p class="lead">
+          <span lang="vi">Bạn muốn trao đổi về công việc hoặc hợp tác? Gửi email cho tôi.</span><span lang="en">Want to discuss a role or a collaboration? Send me an email.</span>
+        </p>
+        <ul class="contact-list">
+          <li>
+            <span class="label">Email</span>
+            <a href="mailto:phamtan239@gmail.com">phamtan239@gmail.com</a>
+          </li>
+          <li>
+            <span class="label">Điện thoại / Phone</span>
+            <a href="tel:+84948345269">+84 948 345 269</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function () {
+  var KEY = 'site-lang';
+  var vi = document.getElementById('lang-vi');
+  var en = document.getElementById('lang-en');
+
+  function apply(isEn) {
+    document.documentElement.lang = isEn ? 'en' : 'vi';
+    document.title = isEn ? 'Phạm Tân — Architect' : 'Phạm Tân — Kiến trúc sư';
+    var imgs = document.querySelectorAll('img[data-alt-vi]');
+    for (var i = 0; i < imgs.length; i++) {
+      imgs[i].alt = isEn ? imgs[i].getAttribute('data-alt-en') : imgs[i].getAttribute('data-alt-vi');
+    }
+  }
+
+  try {
+    if (localStorage.getItem(KEY) === 'en') { en.checked = true; }
+  } catch (e) { /* storage unavailable: keep Vietnamese */ }
+  apply(en.checked);
+
+  function onChange() {
+    apply(en.checked);
+    try { localStorage.setItem(KEY, en.checked ? 'en' : 'vi'); } catch (e) { /* ignore */ }
+  }
+  vi.addEventListener('change', onChange);
+  en.addEventListener('change', onChange);
+})();
+</script>
+</body>
+</html>
